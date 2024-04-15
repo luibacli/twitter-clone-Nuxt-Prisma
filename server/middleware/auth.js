@@ -4,15 +4,27 @@ import { getUserById } from "../db/users";
 
 export default defineEventHandler(async (event) => {
     // brooooo dont forget / before API!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    const endpoints = ["/api/auth/user"];
+    const endpoints = ["/api/auth/user", "/api/user/tweets"];
 
     const isHandledByThisMiddleWare = endpoints.some((endpoint) => {
         const pattern = new UrlPattern(endpoint);
 
-        return pattern.match(event.node.req.url);
-    });
+        const url = event.node.req.url;
 
-    // console.log(isHandledByThisMiddleWare);
+        const count = (url.match(/\//g) || []).length;
+
+        const hasLastSlash = count >= 4;
+
+        // fixing bugs of url
+
+        if (hasLastSlash) {
+            const newUrl = url.replace(/\/$/, "");
+
+            return pattern.match(newUrl);
+        } else {
+            return pattern.match(url);
+        }
+    });
 
     if (!isHandledByThisMiddleWare) {
         return;
