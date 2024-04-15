@@ -1,4 +1,3 @@
-import { NuxtPage } from './.history/.nuxt/components.d_20240413215358';
 <template>
     <!-- dynamic class -->
     <div :class="{ dark: darkMode }">
