@@ -1,4 +1,4 @@
-import { getUserByUserName } from "~/server/db/users";
+import { getUserByUsername } from "~/server/db/users";
 import bcrypt from "bcrypt";
 import { generateTokens, sendRefreshToken } from "~/server/utils/jwt";
 import { userTransformer } from "~/server/transformers/user";
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Is the user registered
-    const user = await getUserByUserName(username);
+    const user = await getUserByUsername(username);
 
     if (!user) {
         return sendError(
