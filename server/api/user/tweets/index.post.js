@@ -1,12 +1,14 @@
 import formidable from "formidable";
-import { createTweet } from "~/server/db/tweets";
-import { tweetTransformer } from "~/server/transformers/tweet";
+import { tweetTransformer } from "~~/server/transformers/tweet.js";
+import { createTweet } from "../../../db/tweets.js";
+import { createMediaFile } from "../../../db/mediaFiles.js";
+import { uploadToCloudinary } from "../../../utils/cloudinary.js";
 
 export default defineEventHandler(async (event) => {
     const form = formidable({});
 
     const response = await new Promise((resolve, reject) => {
-        form.parse(event.node.req, (err, fields, files) => {
+        form.parse(event.req, (err, fields, files) => {
             if (err) {
                 reject(err);
             }
@@ -19,15 +21,34 @@ export default defineEventHandler(async (event) => {
     const userId = event.context?.auth?.user?.id;
 
     const tweetData = {
-        text: fields.text[0],
+        text: fields.text,
         authorId: userId,
     };
-    console.log("text", typeof fields.text[0]);
+
+    const replyTo = fields.replyTo;
+
+    if (replyTo && replyTo !== "null" && replyTo !== "undefined") {
+        tweetData.replyToId = replyTo;
+    }
 
     const tweet = await createTweet(tweetData);
-    console.log("tweet", tweet);
+
+    const filePromises = Object.keys(files).map(async (key) => {
+        const file = files[key];
+
+        const cloudinaryResource = await uploadToCloudinary(file.filepath);
+
+        return createMediaFile({
+            url: cloudinaryResource.secure_url,
+            providerPublicId: cloudinaryResource.public_id,
+            userId: userId,
+            tweetId: tweet.id,
+        });
+    });
+
+    await Promise.all(filePromises);
 
     return {
-        userId: tweetTransformer(tweet),
+        tweet: tweetTransformer(tweet),
     };
 });

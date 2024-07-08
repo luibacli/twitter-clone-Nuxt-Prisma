@@ -1,36 +1,26 @@
 import UrlPattern from "url-pattern";
-import { decodeAccessToken } from "../utils/jwt";
+import { decodeAccessToken } from "../utils/jwt.js";
+import { sendError } from "h3";
 import { getUserById } from "../db/users";
 
 export default defineEventHandler(async (event) => {
-    // brooooo dont forget / before API!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    const endpoints = ["/api/auth/user", "/api/user/tweets"];
+    const endpoints = [
+        "/api/auth/user",
+        "/api/user/tweets",
+        "/api/tweets",
+        "/api/tweets/:id",
+    ];
 
-    const isHandledByThisMiddleWare = endpoints.some((endpoint) => {
-        const pattern = new UrlPattern(endpoint);
+    const isHandledByThisMiddleware = endpoints.some((endopoint) => {
+        const pattern = new UrlPattern(endopoint);
 
-        const url = event.node.req.url;
-
-        const count = (url.match(/\//g) || []).length;
-
-        const hasLastSlash = count >= 4;
-
-        // fixing bugs of url
-
-        if (hasLastSlash) {
-            const newUrl = url.replace(/\/$/, "");
-
-            return pattern.match(newUrl);
-        } else {
-            return pattern.match(url);
-        }
+        return pattern.match(event.req.url);
     });
 
-    if (!isHandledByThisMiddleWare) {
+    if (!isHandledByThisMiddleware) {
         return;
     }
 
-    // make sure to put space between ""
     const token = event.node.req.headers["authorization"]?.split(" ")[1];
 
     const decoded = decodeAccessToken(token);
@@ -50,7 +40,6 @@ export default defineEventHandler(async (event) => {
 
         const user = await getUserById(userId);
 
-        // setting user in the context
         event.context.auth = { user };
     } catch (error) {
         return;
